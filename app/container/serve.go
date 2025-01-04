@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/saadrupai/go-message-broker/app/broker"
 	"github.com/saadrupai/go-message-broker/app/config"
+	"github.com/saadrupai/go-message-broker/app/handler"
 )
 
 func Serve(router *gin.Engine) {
