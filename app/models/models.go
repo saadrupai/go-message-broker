@@ -5,7 +5,11 @@ type QueueCreateReq struct {
 	BufferSize int    `json:"buffer_size"`
 }
 
-type PublishSubscribeReq struct {
+type PublishReq struct {
 	QueueName string `json:"queue_name"`
 	Message   string `json:"message"`
+}
+
+type SubscribeReq struct {
+	QueueName string `json:"queue_name"`
 }

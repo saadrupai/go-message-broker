@@ -27,7 +27,6 @@ func (b *Broker) CreateQueue(name string, bufferSize int) error {
 	}
 
 	b.Queues[name] = queue.NewQueue(name, bufferSize)
-
 	return nil
 }
 

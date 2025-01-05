@@ -22,44 +22,44 @@ func (c *Handler) QueueHandler(ctx *gin.Context) {
 	var queueReq *models.QueueCreateReq
 
 	if err := ctx.ShouldBindJSON(&queueReq); err != nil {
-		ctx.JSON(http.StatusBadRequest, "invalid request")
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid request", "details": err.Error()})
 		return
 	}
 
 	if err := c.Broker.CreateQueue(queueReq.Name, queueReq.BufferSize); err != nil {
-		ctx.JSON(http.StatusBadRequest, err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create queue", "details": err.Error()})
 		return
 	}
-	ctx.JSON(http.StatusCreated, "queue created successfully")
+	ctx.JSON(http.StatusCreated, gin.H{"message": "message published successfully"})
 }
 
 func (c *Handler) PublishHandler(ctx *gin.Context) {
-	var publishReq *models.PublishSubscribeReq
+	var publishReq *models.PublishReq
 
 	if err := ctx.ShouldBindJSON(&publishReq); err != nil {
-		ctx.JSON(http.StatusBadRequest, "invalid request")
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid request", "details": err.Error()})
 		return
 	}
 
 	if err := c.Broker.Publish(publishReq.QueueName, publishReq.Message); err != nil {
-		ctx.JSON(http.StatusBadRequest, err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to publish messsage", "details": err.Error()})
 		return
 	}
-	ctx.JSON(http.StatusCreated, "message published successfully")
+	ctx.JSON(http.StatusCreated, gin.H{"message": "message published successfully"})
 }
 
 func (c *Handler) SubscribeHandler(ctx *gin.Context) {
-	var subscribeReq *models.PublishSubscribeReq
+	var subscribeReq *models.SubscribeReq
 
 	if err := ctx.ShouldBindJSON(&subscribeReq); err != nil {
-		ctx.JSON(http.StatusBadRequest, "invalid request")
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid request", "details": err.Error()})
 		return
 	}
 
 	message, err := c.Broker.Subscribe(subscribeReq.QueueName)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get message", "details": err.Error()})
 		return
 	}
-	ctx.JSON(http.StatusCreated, message)
+	ctx.JSON(http.StatusCreated, gin.H{"message": message})
 }
