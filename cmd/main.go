@@ -12,7 +12,9 @@ import (
 
 func main() {
 	g := gin.Default()
+
 	config.SetConfig()
+
 	container.Serve(g)
 
 	fmt.Println("Server starting..., pid: ", strconv.Itoa(os.Getpid()))
