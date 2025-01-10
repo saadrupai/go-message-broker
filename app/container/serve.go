@@ -16,8 +16,11 @@ func Serve(router *gin.Engine) {
 	handler := handler.NewHandler(broker)
 
 	apiVersion.POST("/create-queue", handler.QueueHandler)
+	apiVersion.POST("/add-subscriber", handler.AddSubscriberHandler)
 	apiVersion.POST("/publish", handler.PublishHandler)
+	apiVersion.POST("/publish-to-all", handler.PublishToAllHandler)
 	apiVersion.POST("/subscribe", handler.SubscribeHandler)
+	apiVersion.POST("/subscribe-by-id", handler.SubscribeByIdHandler)
 
 	router.Run(":" + config.LocalConfig.Port)
 }

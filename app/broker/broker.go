@@ -4,6 +4,7 @@ import (
 	"errors"
 	"sync"
 
+	"github.com/saadrupai/go-message-broker/app/models"
 	"github.com/saadrupai/go-message-broker/app/queue"
 )
 
@@ -18,6 +19,19 @@ func NewBroker() *Broker {
 	}
 }
 
+func (b *Broker) AddSubscriber(subscriberReq models.AddSubscriber) error {
+	b.Mutex.Lock()
+	defer b.Mutex.Unlock()
+
+	if queue, exits := b.Queues[subscriberReq.QueueName]; exits {
+		queue.AddSubscriber(subscriberReq)
+	} else {
+		return errors.New("queue does not exist")
+	}
+
+	return nil
+}
+
 func (b *Broker) CreateQueue(name string, bufferSize int) error {
 	b.Mutex.Lock()
 	defer b.Mutex.Unlock()
@@ -30,7 +44,7 @@ func (b *Broker) CreateQueue(name string, bufferSize int) error {
 	return nil
 }
 
-func (b *Broker) Publish(queueName, message string) error {
+func (b *Broker) PublishToAll(queueName, message string) error {
 	b.Mutex.Lock()
 	defer b.Mutex.Unlock()
 	queue, exists := b.Queues[queueName]
@@ -38,11 +52,48 @@ func (b *Broker) Publish(queueName, message string) error {
 		return errors.New("queue does not exist")
 	}
 
-	if err := queue.Publish(message); err != nil {
+	if err := queue.PublishToAll(message); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (b *Broker) Publish(publishReq models.PublishReq) error {
+	b.Mutex.Lock()
+	defer b.Mutex.Unlock()
+	queue, exists := b.Queues[publishReq.QueueName]
+	if !exists {
+		return errors.New("queue does not exist")
+	}
+
+	if _, exists := queue.Subscribers[publishReq.SubscriberId]; exists {
+		if err := queue.PublishById(publishReq.Message, publishReq.SubscriberId); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (b *Broker) SubscribeById(queueName string, subscriberId uint) (string, error) {
+	b.Mutex.Lock()
+	defer b.Mutex.Unlock()
+
+	queue, exists := b.Queues[queueName]
+	if !exists {
+		return "", errors.New("queue does not exist")
+	}
+
+	if _, exists := queue.Subscribers[subscriberId]; exists {
+		message, err := queue.SubscribeById(subscriberId)
+		if err != nil {
+			return "", err
+		}
+		return message, nil
+	}
+
+	return "no message available", nil
 }
 
 func (b *Broker) Subscribe(queueName string) (string, error) {
@@ -60,5 +111,4 @@ func (b *Broker) Subscribe(queueName string) (string, error) {
 	}
 
 	return message, nil
-
 }

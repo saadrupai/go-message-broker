@@ -33,7 +33,7 @@ func (c *Handler) QueueHandler(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, gin.H{"message": "message published successfully"})
 }
 
-func (c *Handler) PublishHandler(ctx *gin.Context) {
+func (c *Handler) PublishToAllHandler(ctx *gin.Context) {
 	var publishReq *models.PublishReq
 
 	if err := ctx.ShouldBindJSON(&publishReq); err != nil {
@@ -41,7 +41,37 @@ func (c *Handler) PublishHandler(ctx *gin.Context) {
 		return
 	}
 
-	if err := c.Broker.Publish(publishReq.QueueName, publishReq.Message); err != nil {
+	if err := c.Broker.PublishToAll(publishReq.QueueName, publishReq.Message); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to publish messsage", "details": err.Error()})
+		return
+	}
+	ctx.JSON(http.StatusCreated, gin.H{"message": "message published successfully"})
+}
+
+func (c *Handler) PublishHandler(ctx *gin.Context) {
+	var publishReq models.PublishReq
+
+	if err := ctx.ShouldBindJSON(&publishReq); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid request", "details": err.Error()})
+		return
+	}
+
+	if err := c.Broker.Publish(publishReq); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to publish messsage", "details": err.Error()})
+		return
+	}
+	ctx.JSON(http.StatusCreated, gin.H{"message": "message published successfully"})
+}
+
+func (c *Handler) AddSubscriberHandler(ctx *gin.Context) {
+	var addSubscriberReq models.AddSubscriber
+
+	if err := ctx.ShouldBindJSON(&addSubscriberReq); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid request", "details": err.Error()})
+		return
+	}
+
+	if err := c.Broker.AddSubscriber(addSubscriberReq); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to publish messsage", "details": err.Error()})
 		return
 	}
@@ -51,12 +81,28 @@ func (c *Handler) PublishHandler(ctx *gin.Context) {
 func (c *Handler) SubscribeHandler(ctx *gin.Context) {
 	var subscribeReq *models.SubscribeReq
 
-	if err := ctx.ShouldBindJSON(&subscribeReq); err != nil {
+	if err := ctx.BindJSON(&subscribeReq); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid request", "details": err.Error()})
 		return
 	}
 
 	message, err := c.Broker.Subscribe(subscribeReq.QueueName)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get message", "details": err.Error()})
+		return
+	}
+	ctx.JSON(http.StatusCreated, gin.H{"message": message})
+}
+
+func (c *Handler) SubscribeByIdHandler(ctx *gin.Context) {
+	var subscribeReq *models.SubscribeReq
+
+	if err := ctx.ShouldBindJSON(&subscribeReq); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid request", "details": err.Error()})
+		return
+	}
+
+	message, err := c.Broker.SubscribeById(subscribeReq.QueueName, subscribeReq.SubscriberId)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get message", "details": err.Error()})
 		return
