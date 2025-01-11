@@ -1,10 +1,12 @@
 package handler
 
 import (
+	"net"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/saadrupai/go-message-broker/app/broker"
+	"github.com/saadrupai/go-message-broker/app/config"
 	"github.com/saadrupai/go-message-broker/app/models"
 )
 
@@ -48,7 +50,7 @@ func (c *Handler) PublishToAllHandler(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, gin.H{"message": "message published successfully"})
 }
 
-func (c *Handler) PublishHandler(ctx *gin.Context) {
+func (c *Handler) PublishbyIdHandler(ctx *gin.Context) {
 	var publishReq models.PublishReq
 
 	if err := ctx.ShouldBindJSON(&publishReq); err != nil {
@@ -56,7 +58,7 @@ func (c *Handler) PublishHandler(ctx *gin.Context) {
 		return
 	}
 
-	if err := c.Broker.Publish(publishReq); err != nil {
+	if err := c.Broker.PublishById(publishReq); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to publish messsage", "details": err.Error()})
 		return
 	}
@@ -71,11 +73,16 @@ func (c *Handler) AddSubscriberHandler(ctx *gin.Context) {
 		return
 	}
 
-	if err := c.Broker.AddSubscriber(addSubscriberReq); err != nil {
+	connection, err := net.Dial("tcp")
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "failed to create connection with new client", "details": err.Error()})
+	}
+
+	if err := c.Broker.AddSubscriber(addSubscriberReq, connection); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to publish messsage", "details": err.Error()})
 		return
 	}
-	ctx.JSON(http.StatusCreated, gin.H{"message": "message published successfully"})
+	ctx.JSON(http.StatusCreated, gin.H{"message": "subscriber added successfully"})
 }
 
 func (c *Handler) SubscribeHandler(ctx *gin.Context) {

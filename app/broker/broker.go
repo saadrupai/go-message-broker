@@ -2,6 +2,7 @@ package broker
 
 import (
 	"errors"
+	"net"
 	"sync"
 
 	"github.com/saadrupai/go-message-broker/app/models"
@@ -19,12 +20,12 @@ func NewBroker() *Broker {
 	}
 }
 
-func (b *Broker) AddSubscriber(subscriberReq models.AddSubscriber) error {
+func (b *Broker) AddSubscriber(subscriberReq models.AddSubscriber, connection net.Conn) error {
 	b.Mutex.Lock()
 	defer b.Mutex.Unlock()
 
 	if queue, exits := b.Queues[subscriberReq.QueueName]; exits {
-		queue.AddSubscriber(subscriberReq)
+		queue.AddSubscriber(subscriberReq, connection)
 	} else {
 		return errors.New("queue does not exist")
 	}
@@ -59,7 +60,7 @@ func (b *Broker) PublishToAll(queueName, message string) error {
 	return nil
 }
 
-func (b *Broker) Publish(publishReq models.PublishReq) error {
+func (b *Broker) PublishById(publishReq models.PublishReq) error {
 	b.Mutex.Lock()
 	defer b.Mutex.Unlock()
 	queue, exists := b.Queues[publishReq.QueueName]

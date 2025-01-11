@@ -2,8 +2,11 @@ package queue
 
 import (
 	"errors"
+	"fmt"
+	"net"
 	"sync"
 
+	"github.com/google/logger"
 	"github.com/saadrupai/go-message-broker/app/models"
 )
 
@@ -22,15 +25,56 @@ func NewQueue(name string, bufferSize int) *Queue {
 	}
 }
 
-func (q *Queue) AddSubscriber(subscriberReq models.AddSubscriber) models.Subscriber {
+func (q *Queue) AddSubscriber(subscriberReq models.AddSubscriber, connection net.Conn) error {
+	q.Mutex.Lock()
+	defer q.Mutex.Unlock()
+
+	if _, exists := q.Subscribers[subscriberReq.SubscriberId]; exists {
+		return errors.New("subscriber already exists")
+	}
+
 	newSubscriber := models.Subscriber{
 		Id:             subscriberReq.SubscriberId,
 		SubscriberName: subscriberReq.SubscriberName,
 		Channel:        make(chan string, subscriberReq.BufferSize),
+		Connection:     connection,
 	}
+
+	logger.Infof("Adding new subscriber: %s", newSubscriber.SubscriberName)
+
+	go func(subscriber models.Subscriber) {
+		defer func() {
+			subscriber.Connection.Close()
+			q.RemoveSubscriber(subscriber.Id)
+		}()
+		for message := range subscriber.Channel {
+
+			logger.Infof("Sending message to %s: %s", subscriber.SubscriberName, message)
+			_, err := subscriber.Connection.Write([]byte(message + "\n"))
+			if err != nil {
+				logger.Error("failed to write message to subscriber")
+				return
+			}
+		}
+
+	}(newSubscriber)
+
 	q.Subscribers[subscriberReq.SubscriberId] = newSubscriber
 
-	return newSubscriber
+	logger.Infof("Subscriber %d added successfully", subscriberReq.SubscriberId)
+
+	return nil
+}
+
+func (q *Queue) RemoveSubscriber(subscriberId uint) {
+	q.Mutex.Lock()
+	defer q.Mutex.Unlock()
+
+	if subscriber, exists := q.Subscribers[subscriberId]; exists {
+		close(subscriber.Channel)
+		delete(q.Subscribers, subscriberId)
+		logger.Info("Subscriber %d removed\n", subscriberId)
+	}
 }
 
 func (q *Queue) PublishToAll(message string) error {
@@ -40,8 +84,6 @@ func (q *Queue) PublishToAll(message string) error {
 	default:
 		return errors.New("there is no space in queue :" + q.Name)
 	}
-
-	return nil
 }
 
 func (q *Queue) PublishById(message string, subscriberId uint) error {
@@ -63,6 +105,7 @@ func (q *Queue) SubscribeById(subscriberId uint) (string, error) {
 }
 
 func (q *Queue) Subscribe() (string, error) {
+
 	select {
 	case message := <-q.Channel:
 		return message, nil

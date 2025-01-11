@@ -2,12 +2,15 @@ package config
 
 import (
 	"log"
+	"net"
 
 	"github.com/spf13/viper"
 )
 
 type Config struct {
-	Port string `json:"port"`
+	Port             string `json:"port"`
+	SockerServerPort string `json:socket_server_port`
+	Listener         net.Listener
 }
 
 func LoadConfig() *Config {
