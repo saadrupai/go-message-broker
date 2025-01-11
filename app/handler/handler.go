@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"net"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -73,7 +72,7 @@ func (c *Handler) AddSubscriberHandler(ctx *gin.Context) {
 		return
 	}
 
-	connection, err := net.Dial("tcp")
+	connection, err := config.LocalConfig.Listener.Accept()
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "failed to create connection with new client", "details": err.Error()})
 	}
