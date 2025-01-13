@@ -20,12 +20,12 @@ func NewBroker() *Broker {
 	}
 }
 
-func (b *Broker) AddSubscriber(subscriberReq models.AddSubscriber, connection net.Conn) error {
+func (b *Broker) AddSubscriber(subscriberReq models.AddSubscriber) error {
 	b.Mutex.Lock()
 	defer b.Mutex.Unlock()
 
 	if queue, exits := b.Queues[subscriberReq.QueueName]; exits {
-		queue.AddSubscriber(subscriberReq, connection)
+		queue.AddSubscriber(subscriberReq)
 	} else {
 		return errors.New("queue does not exist")
 	}

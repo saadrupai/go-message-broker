@@ -5,7 +5,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/saadrupai/go-message-broker/app/broker"
-	"github.com/saadrupai/go-message-broker/app/config"
 	"github.com/saadrupai/go-message-broker/app/models"
 )
 
@@ -72,12 +71,7 @@ func (c *Handler) AddSubscriberHandler(ctx *gin.Context) {
 		return
 	}
 
-	connection, err := config.LocalConfig.Listener.Accept()
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "failed to create connection with new client", "details": err.Error()})
-	}
-
-	if err := c.Broker.AddSubscriber(addSubscriberReq, connection); err != nil {
+	if err := c.Broker.AddSubscriber(addSubscriberReq); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to publish messsage", "details": err.Error()})
 		return
 	}
