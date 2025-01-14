@@ -93,9 +93,7 @@ func (b *Broker) PublishById(publishReq models.PublishReq) error {
 	return nil
 }
 
-func (b *Broker) SubscribeById(queueName string, subscriberId uint) (string, error) {
-	b.Mutex.Lock()
-	defer b.Mutex.Unlock()
+func (b *Broker) SubscribeById(queueName string, subscriberId uint, connection net.Conn) (string, error) {
 
 	queue, exists := b.Queues[queueName]
 	if !exists {
@@ -103,7 +101,7 @@ func (b *Broker) SubscribeById(queueName string, subscriberId uint) (string, err
 	}
 
 	if _, exists := queue.Subscribers[subscriberId]; exists {
-		message, err := queue.SubscribeById(subscriberId)
+		message, err := queue.SubscribeById(subscriberId, connection)
 		if err != nil {
 			return "", err
 		}

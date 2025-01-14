@@ -1,5 +1,7 @@
 package models
 
+import "net"
+
 type QueueCreateReq struct {
 	Name       string `json:"name"`
 	BufferSize int    `json:"buffer_size"`
@@ -27,5 +29,5 @@ type Subscriber struct {
 	Id             uint   `json:"id"`
 	SubscriberName string `json:"subscriber_name"`
 	Channel        chan string
-	Webhook        string
+	Connection     net.Conn
 }

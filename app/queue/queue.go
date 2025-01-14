@@ -2,11 +2,11 @@ package queue
 
 import (
 	"errors"
+	"net"
 	"sync"
 
 	"github.com/google/logger"
 	"github.com/saadrupai/go-message-broker/app/models"
-	"github.com/saadrupai/go-message-broker/utils"
 )
 
 type Queue struct {
@@ -38,20 +38,6 @@ func (q *Queue) AddSubscriber(subscriberReq models.AddSubscriber) error {
 		Channel:        make(chan string, subscriberReq.BufferSize),
 	}
 
-	newSubscriber.Webhook = utils.GenerateWebhook(subscriberReq.SubscriberId)
-
-	go func(subscriber models.Subscriber) {
-		for message := range subscriber.Channel {
-			logger.Infof("Sending message to %s: %s", subscriber.SubscriberName, message)
-			_, err := subscriber.Connection.Write([]byte(message + "\n"))
-			if err != nil {
-				logger.Error("failed to write message to subscriber")
-				return
-			}
-		}
-
-	}(newSubscriber)
-
 	q.Subscribers[subscriberReq.SubscriberId] = newSubscriber
 
 	logger.Infof("Subscriber %d added successfully", subscriberReq.SubscriberId)
@@ -69,6 +55,7 @@ func (q *Queue) RemoveSubscriber(subscriberId uint) error {
 	} else {
 		return errors.New("subscriber does not exist")
 	}
+	return nil
 }
 
 func (q *Queue) PublishToAll(message string) error {
@@ -83,19 +70,23 @@ func (q *Queue) PublishToAll(message string) error {
 func (q *Queue) PublishById(message string, subscriberId uint) error {
 	select {
 	case q.Subscribers[subscriberId].Channel <- message:
-		return nil
+		q.SubscribeTest(subscriberId)
 	default:
 		return errors.New("there is no space in queue :" + q.Name)
 	}
+	return nil
 }
 
-func (q *Queue) SubscribeById(subscriberId uint) (string, error) {
-	select {
-	case message := <-q.Subscribers[subscriberId].Channel:
-		return message, nil
-	default:
-		return "", errors.New("there is no message available in queue")
-	}
+func (q *Queue) SubscribeById(subscriberId uint, connection net.Conn) (string, error) {
+
+	subscriber := q.Subscribers[subscriberId]
+	subscriber.Connection = connection
+
+	q.Subscribers[subscriberId] = subscriber
+
+	logger.Infof("Subscriber %s added successfully", subscriber)
+
+	return "", nil
 }
 
 func (q *Queue) Subscribe() (string, error) {
@@ -105,5 +96,17 @@ func (q *Queue) Subscribe() (string, error) {
 		return message, nil
 	default:
 		return "", errors.New("there is no message available in queue")
+	}
+}
+
+func (q *Queue) SubscribeTest(subscriberId uint) {
+
+	select {
+	case message := <-q.Subscribers[subscriberId].Channel:
+		_, err := q.Subscribers[subscriberId].Connection.Write([]byte(message + "\n"))
+		if err != nil {
+			logger.Error("failed to write message to subscriber")
+			return
+		}
 	}
 }

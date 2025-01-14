@@ -73,12 +73,7 @@ func (c *Handler) AddSubscriberHandler(ctx *gin.Context) {
 		return
 	}
 
-	connection, err := config.LocalConfig.Listener.Accept()
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "failed to create connection with new client", "details": err.Error()})
-	}
-
-	if err := c.Broker.AddSubscriber(addSubscriberReq, connection); err != nil {
+	if err := c.Broker.AddSubscriber(addSubscriberReq); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to publish messsage", "details": err.Error()})
 		return
 	}
@@ -122,14 +117,24 @@ func (c *Handler) SubscribeHandler(ctx *gin.Context) {
 }
 
 func (c *Handler) SubscribeByIdHandler(ctx *gin.Context) {
-	var subscribeReq *models.SubscribeReq
+	subscriberIdStr := ctx.Param("id")
+	queueName := ctx.Query("queue_name")
 
-	if err := ctx.ShouldBindJSON(&subscribeReq); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid request", "details": err.Error()})
-		return
+	if subscriberIdStr == "" || queueName == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "failed to remove subscriber"})
 	}
 
-	message, err := c.Broker.SubscribeById(subscribeReq.QueueName, subscribeReq.SubscriberId)
+	subscriberIdInt, err := strconv.Atoi(subscriberIdStr)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to convert subscriber id into integer", "details": err.Error()})
+	}
+
+	connection, err := config.LocalConfig.Listener.Accept()
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "failed to create connection with new client", "details": err.Error()})
+	}
+
+	message, err := c.Broker.SubscribeById(queueName, uint(subscriberIdInt), connection)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get message", "details": err.Error()})
 		return
