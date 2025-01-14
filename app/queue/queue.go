@@ -2,7 +2,6 @@ package queue
 
 import (
 	"errors"
-	"fmt"
 	"net"
 	"sync"
 
@@ -43,10 +42,6 @@ func (q *Queue) AddSubscriber(subscriberReq models.AddSubscriber, connection net
 	logger.Infof("Adding new subscriber: %s", newSubscriber.SubscriberName)
 
 	go func(subscriber models.Subscriber) {
-		defer func() {
-			subscriber.Connection.Close()
-			q.RemoveSubscriber(subscriber.Id)
-		}()
 		for message := range subscriber.Channel {
 
 			logger.Infof("Sending message to %s: %s", subscriber.SubscriberName, message)
@@ -66,14 +61,15 @@ func (q *Queue) AddSubscriber(subscriberReq models.AddSubscriber, connection net
 	return nil
 }
 
-func (q *Queue) RemoveSubscriber(subscriberId uint) {
+func (q *Queue) RemoveSubscriber(subscriberId uint) error {
 	q.Mutex.Lock()
 	defer q.Mutex.Unlock()
 
 	if subscriber, exists := q.Subscribers[subscriberId]; exists {
 		close(subscriber.Channel)
 		delete(q.Subscribers, subscriberId)
-		logger.Info("Subscriber %d removed\n", subscriberId)
+	} else {
+		return errors.New("subscriber does not exist")
 	}
 }
 

@@ -1,8 +1,8 @@
 package handler
 
 import (
-	"net"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/saadrupai/go-message-broker/app/broker"
@@ -73,13 +73,33 @@ func (c *Handler) AddSubscriberHandler(ctx *gin.Context) {
 		return
 	}
 
-	connection, err := net.Dial("tcp")
+	connection, err := config.LocalConfig.Listener.Accept()
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "failed to create connection with new client", "details": err.Error()})
 	}
 
 	if err := c.Broker.AddSubscriber(addSubscriberReq, connection); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to publish messsage", "details": err.Error()})
+		return
+	}
+	ctx.JSON(http.StatusCreated, gin.H{"message": "subscriber added successfully"})
+}
+
+func (c *Handler) RemoveSubscriberHandler(ctx *gin.Context) {
+	subscriberIdStr := ctx.Param("id")
+	queueName := ctx.Query("queue_name")
+
+	if subscriberIdStr == "" || queueName == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "failed to remove subscriber"})
+	}
+
+	subscriberIdInt, err := strconv.Atoi(subscriberIdStr)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to convert subscriber id into integer", "details": err.Error()})
+	}
+
+	if err := c.Broker.RemoveSubscriber(uint(subscriberIdInt), queueName); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to remove subscriber", "details": err.Error()})
 		return
 	}
 	ctx.JSON(http.StatusCreated, gin.H{"message": "subscriber added successfully"})
