@@ -6,7 +6,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/saadrupai/go-message-broker/app/broker"
-	"github.com/saadrupai/go-message-broker/app/config"
 	"github.com/saadrupai/go-message-broker/app/models"
 )
 
@@ -117,24 +116,14 @@ func (c *Handler) SubscribeHandler(ctx *gin.Context) {
 }
 
 func (c *Handler) SubscribeByIdHandler(ctx *gin.Context) {
-	subscriberIdStr := ctx.Param("id")
-	queueName := ctx.Query("queue_name")
+	var subscribeReq *models.SubscribeReq
 
-	if subscriberIdStr == "" || queueName == "" {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "failed to remove subscriber"})
+	if err := ctx.BindJSON(&subscribeReq); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid request", "details": err.Error()})
+		return
 	}
 
-	subscriberIdInt, err := strconv.Atoi(subscriberIdStr)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to convert subscriber id into integer", "details": err.Error()})
-	}
-
-	connection, err := config.LocalConfig.Listener.Accept()
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "failed to create connection with new client", "details": err.Error()})
-	}
-
-	message, err := c.Broker.SubscribeById(queueName, uint(subscriberIdInt), connection)
+	message, err := c.Broker.SubscribeById(subscribeReq)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get message", "details": err.Error()})
 		return

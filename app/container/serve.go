@@ -21,7 +21,7 @@ func Serve(router *gin.Engine) {
 	apiVersion.POST("/publish-by-id", handler.PublishbyIdHandler)
 	apiVersion.POST("/publish-to-all", handler.PublishToAllHandler)
 	apiVersion.POST("/subscribe", handler.SubscribeHandler)
-	apiVersion.GET("/subscribe-by-id/:id", handler.SubscribeByIdHandler)
+	apiVersion.POST("/subscribe-by-id", handler.SubscribeByIdHandler)
 
 	router.Run(":" + config.LocalConfig.Port)
 }

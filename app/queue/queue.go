@@ -2,10 +2,10 @@ package queue
 
 import (
 	"errors"
-	"net"
 	"sync"
 
 	"github.com/google/logger"
+	"github.com/saadrupai/go-message-broker/app/config"
 	"github.com/saadrupai/go-message-broker/app/models"
 )
 
@@ -32,10 +32,16 @@ func (q *Queue) AddSubscriber(subscriberReq models.AddSubscriber) error {
 		return errors.New("subscriber already exists")
 	}
 
+	connection, err := config.LocalConfig.Listener.Accept()
+	if err != nil {
+		logger.Error("failed to accept listener")
+	}
+
 	newSubscriber := models.Subscriber{
 		Id:             subscriberReq.SubscriberId,
 		SubscriberName: subscriberReq.SubscriberName,
 		Channel:        make(chan string, subscriberReq.BufferSize),
+		Connection:     connection,
 	}
 
 	q.Subscribers[subscriberReq.SubscriberId] = newSubscriber
@@ -68,25 +74,38 @@ func (q *Queue) PublishToAll(message string) error {
 }
 
 func (q *Queue) PublishById(message string, subscriberId uint) error {
+	subscriber := q.Subscribers[subscriberId]
 	select {
-	case q.Subscribers[subscriberId].Channel <- message:
-		q.SubscribeTest(subscriberId)
+	case subscriber.Channel <- message:
+		logger.Infof("Message queued for subscriber %d: %s", subscriberId, message)
+		return nil
 	default:
 		return errors.New("there is no space in queue :" + q.Name)
 	}
-	return nil
 }
 
-func (q *Queue) SubscribeById(subscriberId uint, connection net.Conn) (string, error) {
-
+func (q *Queue) SubscribeById(subscriberId uint) {
 	subscriber := q.Subscribers[subscriberId]
-	subscriber.Connection = connection
+	logger.Info("starting go routine")
 
-	q.Subscribers[subscriberId] = subscriber
+	go func(subscriber models.Subscriber) {
 
-	logger.Infof("Subscriber %s added successfully", subscriber)
+		for {
 
-	return "", nil
+			logger.Info("listening.........")
+
+			select {
+			case message := <-subscriber.Channel:
+
+				logger.Info("writing msg.........")
+
+				_, err := subscriber.Connection.Write([]byte(message + "\n"))
+				if err != nil {
+					logger.Error("failed to write message to subscriber")
+				}
+			}
+		}
+	}(subscriber)
 }
 
 func (q *Queue) Subscribe() (string, error) {
