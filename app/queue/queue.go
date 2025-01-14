@@ -2,11 +2,11 @@ package queue
 
 import (
 	"errors"
-	"net"
 	"sync"
 
 	"github.com/google/logger"
 	"github.com/saadrupai/go-message-broker/app/models"
+	"github.com/saadrupai/go-message-broker/utils"
 )
 
 type Queue struct {
@@ -24,7 +24,7 @@ func NewQueue(name string, bufferSize int) *Queue {
 	}
 }
 
-func (q *Queue) AddSubscriber(subscriberReq models.AddSubscriber, connection net.Conn) error {
+func (q *Queue) AddSubscriber(subscriberReq models.AddSubscriber) error {
 	q.Mutex.Lock()
 	defer q.Mutex.Unlock()
 
@@ -36,14 +36,12 @@ func (q *Queue) AddSubscriber(subscriberReq models.AddSubscriber, connection net
 		Id:             subscriberReq.SubscriberId,
 		SubscriberName: subscriberReq.SubscriberName,
 		Channel:        make(chan string, subscriberReq.BufferSize),
-		Connection:     connection,
 	}
 
-	logger.Infof("Adding new subscriber: %s", newSubscriber.SubscriberName)
+	newSubscriber.Webhook = utils.GenerateWebhook(subscriberReq.SubscriberId)
 
 	go func(subscriber models.Subscriber) {
 		for message := range subscriber.Channel {
-
 			logger.Infof("Sending message to %s: %s", subscriber.SubscriberName, message)
 			_, err := subscriber.Connection.Write([]byte(message + "\n"))
 			if err != nil {
