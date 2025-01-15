@@ -71,7 +71,7 @@ func (q *Queue) PublishById(message string, subscriberId uint) error {
 	subscriber := q.Subscribers[subscriberId]
 	select {
 	case subscriber.Channel <- message:
-		logger.Infof("Message queued for subscriber %d: %s", subscriberId, <-subscriber.Channel)
+		logger.Infof("Message queued for subscriber")
 		return nil
 	default:
 		return errors.New("there is no space in queue :" + q.Name)
@@ -81,16 +81,13 @@ func (q *Queue) PublishById(message string, subscriberId uint) error {
 func (q *Queue) SubscribeById(subscriberId uint) {
 	subscriber := q.Subscribers[subscriberId]
 	logger.Info("starting go routine")
+	connection, err := config.LocalConfig.Listener.Accept()
+	if err != nil {
+		logger.Error("failed to accept listener")
+	}
+	subscriber.Connection = connection
 
-	for {
-		connection, err := config.LocalConfig.Listener.Accept()
-		if err != nil {
-			logger.Error("failed to accept listener")
-		}
-
-		subscriber.Connection = connection
-
-		// go func(subscriber models.Subscriber) {
+	go func(subscriber models.Subscriber) {
 
 		for {
 
@@ -100,15 +97,14 @@ func (q *Queue) SubscribeById(subscriberId uint) {
 
 			logger.Info("writing msg.........")
 
-			_, err := connection.Write([]byte(message + "\n"))
+			_, err := subscriber.Connection.Write([]byte(message + "\n"))
 			if err != nil {
 				logger.Error("failed to write message to subscriber")
 			}
 
 		}
-		// }(subscriber)
+	}(subscriber)
 
-	}
 }
 
 func (q *Queue) Subscribe() (string, error) {
