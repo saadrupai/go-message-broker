@@ -32,16 +32,10 @@ func (q *Queue) AddSubscriber(subscriberReq models.AddSubscriber) error {
 		return errors.New("subscriber already exists")
 	}
 
-	connection, err := config.LocalConfig.Listener.Accept()
-	if err != nil {
-		logger.Error("failed to accept listener")
-	}
-
 	newSubscriber := models.Subscriber{
 		Id:             subscriberReq.SubscriberId,
 		SubscriberName: subscriberReq.SubscriberName,
 		Channel:        make(chan string, subscriberReq.BufferSize),
-		Connection:     connection,
 	}
 
 	q.Subscribers[subscriberReq.SubscriberId] = newSubscriber
@@ -77,7 +71,7 @@ func (q *Queue) PublishById(message string, subscriberId uint) error {
 	subscriber := q.Subscribers[subscriberId]
 	select {
 	case subscriber.Channel <- message:
-		logger.Infof("Message queued for subscriber %d: %s", subscriberId, message)
+		logger.Infof("Message queued for subscriber %d: %s", subscriberId, <-subscriber.Channel)
 		return nil
 	default:
 		return errors.New("there is no space in queue :" + q.Name)
@@ -88,24 +82,33 @@ func (q *Queue) SubscribeById(subscriberId uint) {
 	subscriber := q.Subscribers[subscriberId]
 	logger.Info("starting go routine")
 
-	go func(subscriber models.Subscriber) {
+	for {
+		connection, err := config.LocalConfig.Listener.Accept()
+		if err != nil {
+			logger.Error("failed to accept listener")
+		}
+
+		subscriber.Connection = connection
+
+		// go func(subscriber models.Subscriber) {
 
 		for {
 
 			logger.Info("listening.........")
 
-			select {
-			case message := <-subscriber.Channel:
+			message := <-subscriber.Channel
 
-				logger.Info("writing msg.........")
+			logger.Info("writing msg.........")
 
-				_, err := subscriber.Connection.Write([]byte(message + "\n"))
-				if err != nil {
-					logger.Error("failed to write message to subscriber")
-				}
+			_, err := connection.Write([]byte(message + "\n"))
+			if err != nil {
+				logger.Error("failed to write message to subscriber")
 			}
+
 		}
-	}(subscriber)
+		// }(subscriber)
+
+	}
 }
 
 func (q *Queue) Subscribe() (string, error) {
