@@ -15,6 +15,10 @@ func main() {
 
 	config.SetConfig()
 
+	client := ConnectRedis()
+
+	config.SetRedisClient(client)
+
 	container.Serve(g)
 
 	fmt.Println("Server starting..., pid: ", strconv.Itoa(os.Getpid()))
