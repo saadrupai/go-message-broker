@@ -79,6 +79,16 @@ func (c *Handler) AddSubscriberHandler(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, gin.H{"message": "message published successfully"})
 }
 
+func (c *Handler) SubscriberList(ctx *gin.Context) {
+	queueName := ctx.GetHeader("queue_name")
+	subList, err := c.Broker.SubscriberList(queueName)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get subscriber list", "details": err.Error()})
+		return
+	}
+	ctx.JSON(http.StatusCreated, gin.H{"sub_list: ": subList})
+}
+
 func (c *Handler) RemoveSubscriberHandler(ctx *gin.Context) {
 	queueName := ctx.Param("queue")
 	idStr := ctx.Param("id")

@@ -24,12 +24,31 @@ func (b *Broker) AddSubscriber(subscriberReq models.AddSubscriber) error {
 	defer b.Mutex.Unlock()
 
 	if queue, exits := b.Queues[subscriberReq.QueueName]; exits {
-		queue.AddSubscriber(subscriberReq)
+		_, err := queue.AddSubscriber(subscriberReq)
+		if err != nil {
+			return err
+		}
 	} else {
 		return errors.New("queue does not exist")
 	}
 
 	return nil
+}
+
+func (b *Broker) SubscriberList(queueName string) ([]*models.SubscriberResp, error) {
+	b.Mutex.Lock()
+	defer b.Mutex.Unlock()
+
+	if queue, exits := b.Queues[queueName]; exits {
+		subList, err := queue.SubscriberList()
+		if err != nil {
+			return nil, err
+		}
+
+		return subList, nil
+	} else {
+		return nil, errors.New("queue does not exist")
+	}
 }
 
 func (b *Broker) RemoveSubscriber(subscriberId uint, queueName string) error {

@@ -17,6 +17,7 @@ func Serve(router *gin.Engine) {
 
 	apiVersion.POST("/create-queue", handler.QueueHandler)
 	apiVersion.POST("/add-subscriber", handler.AddSubscriberHandler)
+	apiVersion.GET("/subscriber-list", handler.SubscriberList)
 	apiVersion.DELETE("/remove-subscriber/:queue/:id", handler.RemoveSubscriberHandler)
 	apiVersion.POST("/publish-by-id", handler.PublishHandler)
 	apiVersion.POST("/publish-to-all", handler.PublishToAllHandler)

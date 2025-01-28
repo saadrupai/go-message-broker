@@ -28,3 +28,8 @@ type Subscriber struct {
 	SubscriberName string `json:"subscriber_name"`
 	Channel        chan string
 }
+
+type SubscriberResp struct {
+	Id             uint   `json:"id"`
+	SubscriberName string `json:"subscriber_name"`
+}
