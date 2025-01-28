@@ -32,6 +32,19 @@ func (b *Broker) AddSubscriber(subscriberReq models.AddSubscriber) error {
 	return nil
 }
 
+func (b *Broker) RemoveSubscriber(subscriberId uint, queueName string) error {
+	b.Mutex.Lock()
+	defer b.Mutex.Unlock()
+
+	if queue, exits := b.Queues[queueName]; exits {
+		queue.RemoveSubscriber(subscriberId)
+	} else {
+		return errors.New("queue does not exist")
+	}
+
+	return nil
+}
+
 func (b *Broker) CreateQueue(name string, bufferSize int) error {
 	b.Mutex.Lock()
 	defer b.Mutex.Unlock()

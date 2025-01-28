@@ -17,10 +17,11 @@ func Serve(router *gin.Engine) {
 
 	apiVersion.POST("/create-queue", handler.QueueHandler)
 	apiVersion.POST("/add-subscriber", handler.AddSubscriberHandler)
-	apiVersion.POST("/publish", handler.PublishHandler)
+	apiVersion.DELETE("/remove-subscriber/:queue/:id", handler.RemoveSubscriberHandler)
+	apiVersion.POST("/publish-by-id", handler.PublishHandler)
 	apiVersion.POST("/publish-to-all", handler.PublishToAllHandler)
-	apiVersion.POST("/subscribe", handler.SubscribeHandler)
-	apiVersion.POST("/subscribe-by-id", handler.SubscribeByIdHandler)
+	apiVersion.GET("/subscribe", handler.SubscribeHandler)
+	apiVersion.GET("/subscribe-by-id/:queue/:id", handler.SubscribeByIdHandler)
 
 	router.Run(":" + config.LocalConfig.Port)
 }

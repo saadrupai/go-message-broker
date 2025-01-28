@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/saadrupai/go-message-broker/app/config"
 	"github.com/saadrupai/go-message-broker/app/container"
+	"github.com/saadrupai/go-message-broker/app/redis"
 )
 
 func main() {
@@ -15,7 +16,7 @@ func main() {
 
 	config.SetConfig()
 
-	client := ConnectRedis()
+	client := redis.ConnectRedis()
 
 	config.SetRedisClient(client)
 

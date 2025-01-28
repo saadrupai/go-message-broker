@@ -9,7 +9,7 @@ import (
 
 type Config struct {
 	Port        string `json:"port"`
-	RedisPort   string `json:"redis_port"`
+	RedisPort   string `mapstructure:"REDIS_PORT"`
 	RedisCLient *redis.Client
 }
 
@@ -23,12 +23,12 @@ func LoadConfig() *Config {
 		log.Fatal("failed to load env variables")
 	}
 
-	var config *Config
+	var config Config
 	if err := viper.Unmarshal(&config); err != nil {
 		log.Fatal("failed to load env variables")
 	}
 
-	return config
+	return &config
 }
 
 var LocalConfig *Config

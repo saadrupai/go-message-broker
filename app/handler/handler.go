@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/saadrupai/go-message-broker/app/broker"
@@ -72,10 +73,26 @@ func (c *Handler) AddSubscriberHandler(ctx *gin.Context) {
 	}
 
 	if err := c.Broker.AddSubscriber(addSubscriberReq); err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to publish messsage", "details": err.Error()})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to add subscriber", "details": err.Error()})
 		return
 	}
 	ctx.JSON(http.StatusCreated, gin.H{"message": "message published successfully"})
+}
+
+func (c *Handler) RemoveSubscriberHandler(ctx *gin.Context) {
+	queueName := ctx.Param("queue")
+	idStr := ctx.Param("id")
+	subId, err := strconv.Atoi(idStr)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "failed to get subscriber id", "details": err.Error()})
+		return
+	}
+
+	if err := c.Broker.RemoveSubscriber(uint(subId), queueName); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to remove subscriber", "details": err.Error()})
+		return
+	}
+	ctx.JSON(http.StatusCreated, gin.H{"message": "subscriber removed successfully"})
 }
 
 func (c *Handler) SubscribeHandler(ctx *gin.Context) {
@@ -95,11 +112,17 @@ func (c *Handler) SubscribeHandler(ctx *gin.Context) {
 }
 
 func (c *Handler) SubscribeByIdHandler(ctx *gin.Context) {
-	var subscribeReq *models.SubscribeReq
-
-	if err := ctx.ShouldBindJSON(&subscribeReq); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid request", "details": err.Error()})
+	queueName := ctx.Param("queue")
+	idStr := ctx.Param("id")
+	subId, err := strconv.Atoi(idStr)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "failed to get subscriber id", "details": err.Error()})
 		return
+	}
+
+	subscribeReq := &models.SubscribeReq{
+		SubscriberId: uint(subId),
+		QueueName:    queueName,
 	}
 
 	message, err := c.Broker.SubscribeById(subscribeReq.QueueName, subscribeReq.SubscriberId)
