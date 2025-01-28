@@ -1,0 +1,198 @@
+{
+	"info": {
+		"_postman_id": "84fb213c-7f0e-4c7b-a257-1421bcf09bc9",
+		"name": "go-message-broker",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"_exporter_id": "23538609",
+		"_collection_link": "https://solar-crescent-884510.postman.co/workspace/Team-Workspace~16e47d5b-317d-4e5b-8805-1b55856b34e9/collection/23538609-84fb213c-7f0e-4c7b-a257-1421bcf09bc9?action=share&source=collection_link&creator=23538609"
+	},
+	"item": [
+		{
+			"name": "create queue",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"test-queue\",\n    \"buffer_size\": 10\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:8080/api/v1/create-queue"
+			},
+			"response": []
+		},
+		{
+			"name": "add subscriber",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"queue_name\": \"test-queue\",\n    \"subscriber_Id\": 10,\n    \"subscriber_name\": \"saad\",\n    \"buffer_size\": 10\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:8080/api/v1/add-subscriber"
+			},
+			"response": []
+		},
+		{
+			"name": "publish to all",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"queue_name\": \"my-queue\",\n    \"message\": \"Hello, World! its a bit off\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:8080/api/v1/publish-to-all"
+			},
+			"response": []
+		},
+		{
+			"name": "publish by id",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"queue_name\": \"my-queue\",\n    \"message\": \"Hello, World rupai!\",\n    \"subscriber_id\": 11\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:8080/api/v1/publish-by-id"
+			},
+			"response": []
+		},
+		{
+			"name": "subscribe",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"queue_name\": \"test-queue\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:8080/api/v1/subscribe"
+			},
+			"response": []
+		},
+		{
+			"name": "subscribe by id",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"queue_name\": \"my-queue\",\n    \"subscriber_id\": 11\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/v1/subscribe-by-id/my-queue/11",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"v1",
+						"subscribe-by-id",
+						"my-queue",
+						"11"
+					],
+					"query": [
+						{
+							"key": "queue_name",
+							"value": "my-queue",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "remove subscriber",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"queue_name\": \"my-queue\",\n    \"subscriber_id\": 11\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/v1/remove-subscriber",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"v1",
+						"remove-subscriber"
+					],
+					"query": [
+						{
+							"key": "queue_name",
+							"value": "my-queue",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
